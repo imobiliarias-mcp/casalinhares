@@ -10,6 +10,10 @@ class ImobziConfiguration:
     base_hostname: str = "www.casalinhares.com.br"
     api_base_url: str = "https://api2.imobzi.app/v1"
 
+    def public_base_url(self) -> str:
+        """Return configured public site origin for property URL resolution."""
+        return f"https://{self.base_hostname.rstrip('/')}"
+
     def origin_header_value(self) -> str:
         """Return the origin header required by Cloudflare gateway."""
         return f"https://{self.base_hostname}"

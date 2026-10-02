@@ -1,22 +1,23 @@
 """Casa Linhares rental search provider implementation."""
 
 import httpx
+
 from scripts.client.configuration import ImobziConfiguration
 from scripts.client.http_transport import ImobziHttpTransport
-from scripts.client.resolver import TenantDatabaseResolver
-from scripts.client.query_builder import RentalQueryBuilder
 from scripts.client.parsers import (
-    SearchResultParser,
-    PropertyDetailParser,
     FacetParser,
+    PropertyDetailParser,
+    SearchResultParser,
+)
+from scripts.client.query_builder import RentalQueryBuilder
+from scripts.client.resolver import TenantDatabaseResolver
+from scripts.domain.collections import (
+    FacetCollection,
+    RentalSearchResult,
 )
 from scripts.domain.criteria import RentalFilter
-from scripts.domain.value_objects import PropertyCode
 from scripts.domain.entities import RentalPropertyDetail
-from scripts.domain.collections import (
-    RentalSearchResult,
-    FacetCollection,
-)
+from scripts.domain.value_objects import PropertyCode
 from scripts.interfaces.provider import RentalProviderProtocol
 
 
@@ -52,7 +53,7 @@ class CasaLinharesRentalProvider(RentalProviderProtocol):
         query_builder = RentalQueryBuilder()
         query_parameters = query_builder.build_parameters(search_filter)
         raw_response = self._transport.get_json(endpoint_url, query_parameters)
-        parser = SearchResultParser()
+        parser = SearchResultParser(public_base_url=self._transport.public_base_url())
         return parser.parse_search_response(raw_response)
 
     def get_property_detail(self, code: PropertyCode) -> RentalPropertyDetail:
@@ -62,7 +63,7 @@ class CasaLinharesRentalProvider(RentalProviderProtocol):
         endpoint_url = f"https://api2.imobzi.app/v1/{database_id}/site2/properties/{code_string}"
         parameters = {"listing_broker_properties_count": "true"}
         raw_response = self._transport.get_json(endpoint_url, parameters)
-        parser = PropertyDetailParser()
+        parser = PropertyDetailParser(public_base_url=self._transport.public_base_url())
         return parser.parse_detail_response(raw_response)
 
     def get_facets(self) -> FacetCollection:

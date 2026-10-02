@@ -1,24 +1,32 @@
 """Parsers converting raw Imobzi JSON responses into domain entities."""
 
-from scripts.domain.value_objects import ListingPrice, PropertyCode
-from scripts.domain.entities import (
-    ListingIdentity,
-    ListingValuation,
-    ListingCore,
-    ListingDetails,
-    RentalListing,
-    DetailedProfile,
-    RentalPropertyDetail,
-)
+from scripts.client.public_urls import PublicPropertyUrlResolver
 from scripts.domain.collections import (
+    FacetCollection,
     RentalListingCollection,
     RentalSearchResult,
-    FacetCollection,
 )
+from scripts.domain.entities import (
+    DetailedProfile,
+    ListingCore,
+    ListingDetails,
+    ListingIdentity,
+    ListingResources,
+    ListingValuation,
+    RentalListing,
+    RentalPropertyDetail,
+)
+from scripts.domain.value_objects import ListingPrice, PropertyCode
 
 
 class SearchResultParser:
     """Parses property search response payloads into RentalSearchResult."""
+
+    DEFAULT_PUBLIC_BASE_URL = "https://www.casalinhares.com.br"
+
+    def __init__(self, public_base_url: str = DEFAULT_PUBLIC_BASE_URL) -> None:
+        """Initialize URL resolution for the configured public site."""
+        self._url_resolver = PublicPropertyUrlResolver(public_base_url)
 
     def _build_core(self, item: dict) -> ListingCore:
         """Construct core identification and valuation."""
@@ -38,7 +46,10 @@ class SearchResultParser:
         location = f"{neighborhood}, {city}" if neighborhood and city else city
         cover_dict = item.get("cover_photo")
         cover_url = str(cover_dict.get("url", "")) if isinstance(cover_dict, dict) else ""
-        return ListingDetails(location_summary=location, media_url=cover_url)
+        context = str(item.get("code") or "unknown")
+        property_url = self._url_resolver.resolve(item.get("site_url"), context)
+        resources = ListingResources(media_url=cover_url, property_url=property_url)
+        return ListingDetails(location_summary=location, resources=resources)
 
     def _extract_single_listing(self, item: dict) -> RentalListing:
         """Convert a raw property JSON object into a domain RentalListing."""
@@ -71,6 +82,10 @@ class SearchResultParser:
 class PropertyDetailParser:
     """Parses single property response into RentalPropertyDetail."""
 
+    def __init__(self, public_base_url: str = SearchResultParser.DEFAULT_PUBLIC_BASE_URL) -> None:
+        """Initialize detail parsing with the configured public site origin."""
+        self._search_parser = SearchResultParser(public_base_url=public_base_url)
+
     def _build_amenities(self, item: dict) -> str:
         """Format room counts and dimensions."""
         bedrooms = int(item.get("bedroom", 0) or 0)
@@ -81,8 +96,7 @@ class PropertyDetailParser:
 
     def parse_detail_response(self, item: dict) -> RentalPropertyDetail:
         """Parse raw property detail JSON into RentalPropertyDetail entity."""
-        search_parser = SearchResultParser()
-        base_listing = search_parser._extract_single_listing(item)
+        base_listing = self._search_parser._extract_single_listing(item)
         raw_desc = str(item.get("description", ""))
         desc = raw_desc if raw_desc else str(item.get("site_description", ""))
         amenities = self._build_amenities(item)

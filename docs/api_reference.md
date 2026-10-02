@@ -88,3 +88,17 @@ curl -s "https://api2.imobzi.app/v1/ac-ohlj221031aqut/site2/properties/1443/rela
 2. **Page vs. Cursor Pagination**: Both `page=N` and `cursor=TOKEN` work. `page=N` is easiest for random page jumps, while `cursor` guarantees consistency across concurrent listing inserts.
 3. **Price Field**: For rental searches, inspect `rental_value`. The `total_rental_value` field is often `0` if condominium and IPTU taxes are paid separately by the tenant.
 4. **Photo Resolution**: Image URLs from `media.imobzi.com` can have `=s0` appended for original resolution or `=s400` for 400px thumbnails.
+
+## 4. Public Property URLs
+
+Search results expose the public listing destination in the API-provided `site_url` field.
+The adapter resolves relative or protocol-relative values against its configured Casa Linhares
+site origin and serializes the absolute HTTP(S) destination as `url`, while retaining the
+existing `media_url` field. It does not construct a property route from the listing code or
+make an extra detail request. Missing links, Imobzi API endpoints, media files, and non-property
+site routes raise a contextual `ValueError` instead of being returned as property URLs.
+
+```python
+for listing in search_result.listings():
+    print(listing.to_dictionary()["url"])
+```

@@ -6,8 +6,8 @@ repo_root = str(Path(__file__).resolve().parent.parent)
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
-from scripts.domain.value_objects import PropertyCode
 from scripts.domain.exceptions import RentalSearchException
+from scripts.domain.value_objects import PropertyCode
 from scripts.providers.casalinhares import CasaLinharesRentalProvider
 
 
@@ -29,8 +29,10 @@ def main() -> None:
         print(f"Erro ao buscar imóvel: {error}", file=sys.stderr)
         sys.exit(1)
     formatted_view = property_detail.format_detailed_view()
+    listing_data = property_detail.to_dictionary()
     print("\n" + "=" * 70)
     print(formatted_view)
+    print(f"Link: {listing_data['url']}")
     print("=" * 70 + "\n")
 
 

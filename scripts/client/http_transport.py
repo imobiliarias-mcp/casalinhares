@@ -1,10 +1,11 @@
 """HTTP transport layer for Imobzi API."""
 
 import httpx
+
 from scripts.client.configuration import ImobziConfiguration
 from scripts.domain.exceptions import (
-    ProviderTransportException,
     PropertyNotFoundException,
+    ProviderTransportException,
 )
 
 
@@ -19,6 +20,10 @@ class ImobziHttpTransport:
         """Initialize transport with configuration and client."""
         self._configuration = configuration
         self._http_client = http_client
+
+    def public_base_url(self) -> str:
+        """Return the configured public site origin."""
+        return self._configuration.public_base_url()
 
     def _build_default_headers(self) -> dict[str, str]:
         """Build origin validation headers required by Imobzi gateway."""
